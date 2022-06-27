@@ -1,0 +1,230 @@
+
+onLoading(BuildContext context) {
+  CircularProgressIndicator();
+}
+
+Future<void> saveFile(BuildContext context, List<Same> samdata) async {
+  var status = await Permission.storage.request();
+
+  if (status.isDenied) {
+    // We didn't ask for permission yet or the permission has been denied before but not permanently.
+
+  } else {
+    final directory = Platform.isAndroid
+        ? await getExternalStorageDirectory()
+        : await getApplicationDocumentsDirectory();
+    String path = directory!.path;
+    print(directory);
+    String filepath = "";
+    List<String> paths = path.split("/");
+
+    for (int x = 0; x < paths.length - 1; x++) {
+      String folder = paths[x];
+      if (folder != "Android") {
+        filepath += "/" + folder;
+      } else {
+        break;
+      }
+    }
+    String name = Platform.isAndroid ? "/Download/GrammerChecker" : "";
+
+    filepath = filepath + name;
+    final savedDir = Directory(filepath);
+
+    bool hasExisted = await savedDir.exists();
+    if (!hasExisted) {
+      savedDir.create();
+    }
+    var filename = 'Output';
+    // _fileNameEditingController.text;
+
+    // final file = File("${savedDir.path}/$filename.pdf");
+
+    final file = File("${savedDir.path}/$filename.pdf");
+    onLoading(context);
+    // final directory =
+    //     await FilePicker.platform.saveFile(fileName: "grammercheckerfile");
+
+    final pdf = pdfw.Document();
+    var fontData = await rootBundle.load('fonts/NotoSans-Light.ttf');
+    var data = fontData.buffer.asByteData();
+    var myFont = pdfw.Font.ttf(data);
+    final image = await rootBundle.load('assets/logo_with_text.png');
+    log('Control is near start');
+    for (var sam in samdata) {
+      pdf.addPage(pdfw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (context) {
+            return pdfw.Column(children: [
+              pdfw.Container(
+                  height: 50.0,
+                  width: double.infinity,
+                  child: pdfw.Row(
+                      mainAxisAlignment: pdfw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pdfw.CrossAxisAlignment.end,
+                      children: [
+                        pdfw.Image(
+                          pdfw.MemoryImage(image.buffer.asUint8List()),
+                          width: 70.0,
+                          height: 20.0,
+                          fit: pdfw.BoxFit.fill,
+                        ),
+                        pdfw.Align(
+                          alignment: pdfw.Alignment.bottomCenter,
+                          child: pdfw.Text(
+                            DateFormat.yMMMEd().format(DateTime.now()),
+                            style: pdfw.TextStyle(
+                                color: PdfColors.black,
+                                fontSize: 16.0,
+                                font: myFont),
+                          ),
+                        )
+                      ])),
+              pdfw.SizedBox(height: 2.0),
+              pdfw.Divider(height: 1.0, color: PdfColors.black, thickness: 1.0),
+              pdfw.SizedBox(height: 10.0),
+              pdfw.RichText(
+                text: pdfw.TextSpan(
+                    children: samdata.map((element) {
+                  if (element.same != null) {
+                    return pdfw.TextSpan(
+                        text: samdata.indexOf(element) == 0
+                            ? element.same
+                            : " ${element.same!}",
+                        style: pdfw.TextStyle(
+                            font: myFont, color: PdfColors.black));
+                  } else if (element.oriRep != null) {
+                    return pdfw.TextSpan(
+                        text: samdata.indexOf(element) == 0
+                            ? element.ischanged!
+                                ? element.repsRep
+                                : element.oriRep
+                            : " ${element.ischanged! ? element.repsRep! : element.oriRep!}",
+                        style: pdfw.TextStyle(
+                            font: myFont,
+                            decoration: pdfw.TextDecoration.underline,
+                            fontSize: 16.0,
+                            color: element.ischanged!
+                                ? PdfColors.green
+                                : PdfColors.red));
+                  } else if (element.orignalInsert != null) {
+                    return pdfw.TextSpan(
+                        text: samdata.indexOf(element) == 0
+                            ? element.ischanged!
+                                ? element.responseInsert
+                                : element.orignalInsert
+                            : " ${element.ischanged! ? element.responseInsert : element.orignalInsert}",
+                        style: pdfw.TextStyle(
+                            font: myFont,
+                            decoration: pdfw.TextDecoration.underline,
+                            fontSize: 16.0,
+                            color: element.ischanged!
+                                ? PdfColors.green
+                                : PdfColors.red));
+                  } else {
+                    return const pdfw.TextSpan(text: "");
+                  }
+                }).toList()
+                ),
+              
+            ),
+            ]);
+          }));
+    }
+
+    // pdf.addPage(pw.MultiPage(
+    //     pageFormat: PdfPageFormat.a4,
+    //     // maxPages: 1,
+    //     build: (context) {
+    //       return [
+    //         pdfw.Wrap(children: [
+    //           pdfw.Container(
+    //               height: 50.0,
+    //               width: double.infinity,
+    //               child: pdfw.Row(
+    //                   mainAxisAlignment: pdfw.MainAxisAlignment.spaceBetween,
+    //                   crossAxisAlignment: pdfw.CrossAxisAlignment.end,
+    //                   children: [
+    //                     // pdfw.Image(
+    //                     //   pdfw.MemoryImage(image.buffer.asUint8List()),
+    //                     //   width: 70.0,
+    //                     //   height: 20.0,
+    //                     //   fit: pdfw.BoxFit.fill,
+    //                     // ),
+    //                     pdfw.Align(
+    //                       alignment: pdfw.Alignment.bottomCenter,
+    //                       child: pdfw.Text(
+    //                         DateFormat.yMMMEd().format(DateTime.now()),
+    //                         style: pdfw.TextStyle(
+    //                             color: PdfColors.black,
+    //                             fontSize: 16.0,
+    //                             font: myFont),
+    //                       ),
+    //                     )
+    //                   ])),
+    //           pdfw.SizedBox(height: 2.0),
+    //           pdfw.Divider(height: 1.0, color: PdfColors.black, thickness: 1.0),
+    //           pdfw.SizedBox(height: 10.0),
+    //           pdfw.RichText(
+    //             text: pdfw.TextSpan(
+    //                 children: samdata.map((element) {
+    //               if (element.same != null) {
+    //                 return pdfw.TextSpan(
+    //                     text: samdata.indexOf(element) == 0
+    //                         ? element.same
+    //                         : " ${element.same!}",
+    //                     style: pdfw.TextStyle(
+    //                         font: myFont, color: PdfColors.black));
+    //               } else if (element.oriRep != null) {
+    //                 return pdfw.TextSpan(
+    //                     text: samdata.indexOf(element) == 0
+    //                         ? element.ischanged!
+    //                             ? element.repsRep
+    //                             : element.oriRep
+    //                         : " ${element.ischanged! ? element.repsRep! : element.oriRep!}",
+    //                     style: pdfw.TextStyle(
+    //                         font: myFont,
+    //                         decoration: pdfw.TextDecoration.underline,
+    //                         fontSize: 16.0,
+    //                         color: element.ischanged!
+    //                             ? PdfColors.green
+    //                             : PdfColors.red));
+    //               } else if (element.orignalInsert != null) {
+    //                 return pdfw.TextSpan(
+    //                     text: samdata.indexOf(element) == 0
+    //                         ? element.ischanged!
+    //                             ? element.responseInsert
+    //                             : element.orignalInsert
+    //                         : " ${element.ischanged! ? element.responseInsert : element.orignalInsert}",
+    //                     style: pdfw.TextStyle(
+    //                         font: myFont,
+    //                         decoration: pdfw.TextDecoration.underline,
+    //                         fontSize: 16.0,
+    //                         color: element.ischanged!
+    //                             ? PdfColors.green
+    //                             : PdfColors.red));
+    //               } else {
+    //                 return const pdfw.TextSpan(text: "");
+    //               }
+    //             }).toList()),
+    //           ),
+    //         ])
+    //       ];
+    //     }));
+
+    // final file1 = File("$directory.pdf");
+    log('Control is near end');
+    file.writeAsBytes(await pdf.save()).then((value) {
+      OpenFile.open(file.path);
+      log(file.path);
+      // Navigator.pop(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("File Saved Successfully")));
+    }).onError((error, stackTrace) {
+      log(error.toString());
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error in saving file")));
+    });
+  }
+}
